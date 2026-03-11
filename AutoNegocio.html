@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AutoNegocio — Gestión de Carros</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #12151c;
+    --bg3: #1a1e28;
+    --border: #252a38;
+    --accent: #f0b429;
+    --accent2: #e07c00;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --card: #161921;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; overflow-x:hidden; }
+
+  /* TOPBAR */
+  .topbar { background:var(--bg2); border-bottom:1px solid var(--border); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; color:var(--accent); }
+  .logo span { color:var(--text); }
+  .topbar-sub { font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+
+  /* NAV */
+  .nav { display:flex; background:var(--bg2); border-bottom:1px solid var(--border); overflow-x:auto; }
+  .nav::-webkit-scrollbar { display:none; }
+  .nav-btn { padding:12px 20px; font-size:13px; font-weight:600; color:var(--muted); border:none; background:none; cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; transition:all .2s; letter-spacing:.5px; }
+  .nav-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .nav-btn:hover { color:var(--text); }
+
+  /* PAGES */
+  .page { display:none; padding:20px; max-width:900px; margin:0 auto; }
+  .page.active { display:block; }
+
+  /* CARDS */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+  .card-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; color:var(--accent); margin-bottom:14px; }
+
+  /* STATS ROW */
+  .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
+  .stat-box { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .stat-label { font-size:11px; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:6px; font-family:'JetBrains Mono',monospace; }
+  .stat-val { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:1px; }
+  .stat-val.green { color:var(--green); }
+  .stat-val.yellow { color:var(--accent); }
+  .stat-val.blue { color:var(--blue); }
+  .stat-val.red { color:var(--red); }
+
+  /* TABLES */
+  .tbl-wrap { overflow-x:auto; border-radius:10px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; min-width:600px; }
+  th { background:var(--bg3); color:var(--muted); font-weight:600; padding:10px 12px; text-align:left; font-size:11px; letter-spacing:.5px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; border-bottom:1px solid var(--border); }
+  td { padding:12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:rgba(255,255,255,.02); }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:.3px; }
+  .badge.inv { background:rgba(59,130,246,.15); color:var(--blue); border:1px solid rgba(59,130,246,.3); }
+  .badge.sold { background:rgba(34,197,94,.15); color:var(--green); border:1px solid rgba(34,197,94,.3); }
+  .badge.loss { background:rgba(239,68,68,.15); color:var(--red); border:1px solid rgba(239,68,68,.3); }
+  .amt { font-family:'JetBrains Mono',monospace; font-size:13px; }
+  .amt.pos { color:var(--green); }
+  .amt.neg { color:var(--red); }
+
+  /* ACTION BTNS */
+  .btn { padding:10px 18px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:none; transition:all .15s; letter-spacing:.3px; }
+  .btn-primary { background:var(--accent); color:#000; }
+  .btn-primary:hover { background:var(--accent2); }
+  .btn-sm { padding:6px 12px; font-size:12px; border-radius:6px; }
+  .btn-ghost { background:var(--bg3); color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-danger { background:rgba(239,68,68,.15); color:var(--red); border:1px solid rgba(239,68,68,.3); }
+  .btn-green { background:rgba(34,197,94,.15); color:var(--green); border:1px solid rgba(34,197,94,.3); }
+  .btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+
+  /* FORMS */
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media(max-width:500px) { .form-grid { grid-template-columns:1fr; } .stats-grid { grid-template-columns:1fr 1fr; } }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+  .form-group.full { grid-column:1/-1; }
+  label { font-size:12px; color:var(--muted); font-weight:600; letter-spacing:.3px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; }
+  input, select, textarea { background:var(--bg3); border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:8px; font-size:14px; font-family:'DM Sans',sans-serif; outline:none; transition:border .2s; width:100%; }
+  input:focus, select:focus, textarea:focus { border-color:var(--accent); }
+  select option { background:var(--bg3); }
+
+  /* MODAL */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:200; align-items:center; justify-content:center; padding:20px; }
+  .overlay.open { display:flex; }
+  .modal { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:24px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; }
+  .modal-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; color:var(--accent); margin-bottom:20px; }
+  .modal-footer { display:flex; gap:10px; margin-top:20px; }
+
+  /* CAR CARD */
+  .car-list { display:flex; flex-direction:column; gap:12px; }
+  .car-item { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; cursor:pointer; transition:border .2s; }
+  .car-item:hover { border-color:var(--accent); }
+  .car-item-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .car-name { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; }
+  .car-meta { font-size:12px; color:var(--muted); margin-top:2px; font-family:'JetBrains Mono',monospace; }
+  .car-financials { display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+  .fin-item { display:flex; flex-direction:column; gap:2px; }
+  .fin-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; font-family:'JetBrains Mono',monospace; }
+  .fin-val { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; }
+
+  /* DETAIL PAGE */
+  .back-btn { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; cursor:pointer; margin-bottom:16px; background:none; border:none; font-family:'DM Sans',sans-serif; }
+  .back-btn:hover { color:var(--accent); }
+  .detail-header { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+  .detail-title { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:2px; color:var(--accent); }
+  .detail-meta { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); margin-top:4px; }
+  .detail-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:16px; }
+  @media(max-width:400px){ .detail-stats { grid-template-columns:1fr 1fr; } }
+
+  /* GANANCIA BOX */
+  .profit-box { border-radius:12px; padding:20px; margin-bottom:16px; text-align:center; }
+  .profit-box.pos { background:rgba(34,197,94,.1); border:2px solid rgba(34,197,94,.3); }
+  .profit-box.neg { background:rgba(239,68,68,.1); border:2px solid rgba(239,68,68,.3); }
+  .profit-label { font-size:12px; font-family:'JetBrains Mono',monospace; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .profit-val { font-family:'Bebas Neue',sans-serif; font-size:48px; letter-spacing:2px; }
+  .profit-pct { font-family:'JetBrains Mono',monospace; font-size:14px; margin-top:4px; }
+
+  /* EMPTY STATE */
+  .empty { text-align:center; padding:48px 20px; color:var(--muted); }
+  .empty-icon { font-size:48px; margin-bottom:12px; }
+  .empty-text { font-size:14px; }
+
+  /* FAB */
+  .fab { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:var(--accent); color:#000; font-size:28px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700; box-shadow:0 4px 24px rgba(240,180,41,.4); z-index:50; transition:transform .15s; }
+  .fab:hover { transform:scale(1.1); }
+
+  .section-title { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px; color:var(--muted); margin-bottom:12px; text-transform:uppercase; }
+
+  .divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+
+  .cat-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; margin-right:4px; }
+  .cat-compra { background:rgba(240,180,41,.15); color:var(--accent); }
+  .cat-mecanica { background:rgba(59,130,246,.15); color:var(--blue); }
+  .cat-pintura { background:rgba(168,85,247,.15); color:#a855f7; }
+  .cat-documentos { background:rgba(236,72,153,.15); color:#ec4899; }
+  .cat-otro { background:rgba(107,114,128,.15); color:var(--muted); }
+
+  .toast { position:fixed; bottom:88px; left:50%; transform:translateX(-50%); background:var(--accent); color:#000; padding:10px 20px; border-radius:8px; font-weight:700; font-size:13px; z-index:300; opacity:0; transition:opacity .3s; pointer-events:none; white-space:nowrap; }
+  .toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="logo">Auto<span>Negocio</span></div>
+    <div class="topbar-sub" id="topbar-date"></div>
+  </div>
+  <div style="text-align:right">
+    <div class="topbar-sub" style="color:var(--accent);font-size:13px;font-weight:700" id="topbar-total"></div>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('dashboard')">📊 Dashboard</button>
+  <button class="nav-btn" onclick="showPage('inventario')">🚗 Inventario</button>
+  <button class="nav-btn" onclick="showPage('vendidos')">✅ Vendidos</button>
+  <button class="nav-btn" onclick="showPage('reportes')">📋 Reportes</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div style="margin-bottom:20px;padding-top:4px">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">RESUMEN GENERAL</div>
+  </div>
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <div class="card">
+    <div class="card-title">Inventario Activo</div>
+    <div class="tbl-wrap" id="dash-inv-table"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Últimas Ventas</div>
+    <div class="tbl-wrap" id="dash-sold-table"></div>
+  </div>
+</div>
+
+<!-- INVENTARIO -->
+<div class="page" id="page-inventario">
+  <div class="btn-row" style="padding-top:4px">
+    <button class="btn btn-primary" onclick="openAddCar()">+ Agregar Vehículo</button>
+  </div>
+  <div class="car-list" id="inv-list"></div>
+</div>
+
+<!-- VENDIDOS -->
+<div class="page" id="page-vendidos">
+  <div class="car-list" id="sold-list"></div>
+</div>
+
+<!-- REPORTES -->
+<div class="page" id="page-reportes">
+  <div class="card">
+    <div class="card-title">Reporte Completo — Todos los Vehículos</div>
+    <div class="tbl-wrap" id="reporte-table"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Resumen Financiero</div>
+    <div id="reporte-summary"></div>
+  </div>
+</div>
+
+<!-- DETALLE VEHÍCULO -->
+<div class="page" id="page-detalle">
+  <button class="back-btn" onclick="backToList()">← Volver</button>
+  <div id="detalle-content"></div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab-btn" onclick="openAddCar()">+</button>
+
+<!-- MODAL: Agregar Vehículo -->
+<div class="overlay" id="modal-car">
+  <div class="modal">
+    <div class="modal-title">Nuevo Vehículo</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Marca</label>
+        <input id="f-marca" placeholder="Toyota, Nissan...">
+      </div>
+      <div class="form-group">
+        <label>Modelo</label>
+        <input id="f-modelo" placeholder="Corolla, Sentra...">
+      </div>
+      <div class="form-group">
+        <label>Año</label>
+        <input id="f-anio" type="number" placeholder="2019">
+      </div>
+      <div class="form-group">
+        <label>Procedencia</label>
+        <select id="f-procedencia">
+          <option value="Nacional">Nacional</option>
+          <option value="Importado USA">Importado USA</option>
+          <option value="Importado Europa">Importado Europa</option>
+          <option value="Importado Japón">Importado Japón</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fecha de Compra</label>
+        <input id="f-fecha" type="date">
+      </div>
+      <div class="form-group">
+        <label>Precio de Compra ($)</label>
+        <input id="f-precio" type="number" placeholder="0.00">
+      </div>
+      <div class="form-group full">
+        <label>Notas</label>
+        <textarea id="f-notas" rows="2" placeholder="Condición, detalles..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveCar()">Guardar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-car')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Agregar Gasto -->
+<div class="overlay" id="modal-gasto">
+  <div class="modal">
+    <div class="modal-title">Agregar Gasto</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="g-cat">
+          <option value="mecanica">🔧 Reparaciones / Mecánica</option>
+          <option value="pintura">🎨 Pintura / Estética</option>
+          <option value="documentos">📄 Documentos / Trámites</option>
+          <option value="otro">➕ Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Monto ($)</label>
+        <input id="g-monto" type="number" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input id="g-fecha" type="date">
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <input id="g-desc" placeholder="Detalles del gasto...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveGasto()">Agregar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-gasto')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Registrar Venta -->
+<div class="overlay" id="modal-venta">
+  <div class="modal">
+    <div class="modal-title">Registrar Venta</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Precio de Venta ($)</label>
+        <input id="v-precio" type="number" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Fecha de Venta</label>
+        <input id="v-fecha" type="date">
+      </div>
+      <div class="form-group full">
+        <label>Nombre del Comprador (opcional)</label>
+        <input id="v-comprador" placeholder="Nombre del cliente...">
+      </div>
+    </div>
+    <div id="venta-preview" style="margin-top:12px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-green" onclick="saveVenta()">✅ Confirmar Venta</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-venta')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA LAYER =====
+let db = JSON.parse(localStorage.getItem('autonegocio_v2') || '{"cars":[]}');
+let currentCarId = null;
+let prevPage = 'inventario';
+
+function save() { localStorage.setItem('autonegocio_v2', JSON.stringify(db)); }
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+function fmt(n) {
+  const num = parseFloat(n) || 0;
+  return '$' + num.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function fdate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function catLabel(c) {
+  const m = {compra:'Compra inicial',mecanica:'Mecánica',pintura:'Pintura / Estética',documentos:'Documentos',otro:'Otro'};
+  return m[c] || c;
+}
+
+function catClass(c) { return 'cat-'+c; }
+
+function getTotalInvertido(car) {
+  return (car.gastos || []).reduce((s,g) => s + (parseFloat(g.monto)||0), 0);
+}
+
+function getGanancia(car) {
+  if (!car.venta) return null;
+  return parseFloat(car.venta.precio) - getTotalInvertido(car);
+}
+
+// ===== NAV =====
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => { if(b.textContent.toLowerCase().includes(id) || b.getAttribute('onclick')?.includes(id)) b.classList.add('active'); });
+  const fab = document.getElementById('fab-btn');
+  fab.style.display = (id === 'inventario') ? 'flex' : 'none';
+  if (id === 'dashboard') renderDashboard();
+  else if (id === 'inventario') renderInventario();
+  else if (id === 'vendidos') renderVendidos();
+  else if (id === 'reportes') renderReportes();
+  updateTopbar();
+}
+
+// ===== TOPBAR =====
+function updateTopbar() {
+  const d = new Date();
+  document.getElementById('topbar-date').textContent = d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  const inv = db.cars.filter(c => !c.venta);
+  const capitalActivo = inv.reduce((s,c) => s + getTotalInvertido(c), 0);
+  document.getElementById('topbar-total').textContent = 'Capital activo: ' + fmt(capitalActivo);
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const inv = db.cars.filter(c => !c.venta);
+  const sold = db.cars.filter(c => c.venta);
+  const capitalActivo = inv.reduce((s,c) => s + getTotalInvertido(c), 0);
+  const ganTotal = sold.reduce((s,c) => s + (getGanancia(c)||0), 0);
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-box"><div class="stat-label">En Inventario</div><div class="stat-val blue">${inv.length}</div></div>
+    <div class="stat-box"><div class="stat-label">Vendidos</div><div class="stat-val yellow">${sold.length}</div></div>
+    <div class="stat-box"><div class="stat-label">Capital Activo</div><div class="stat-val blue">${fmt(capitalActivo)}</div></div>
+    <div class="stat-box"><div class="stat-label">Ganancia Acum.</div><div class="stat-val ${ganTotal>=0?'green':'red'}">${fmt(ganTotal)}</div></div>
+  `;
+
+  // Inventario table
+  if (inv.length === 0) {
+    document.getElementById('dash-inv-table').innerHTML = '<div class="empty"><div class="empty-icon">🚗</div><div class="empty-text">Sin vehículos en inventario</div></div>';
+  } else {
+    document.getElementById('dash-inv-table').innerHTML = `
+      <table>
+        <thead><tr><th>Vehículo</th><th>Año</th><th>Procedencia</th><th>Invertido</th><th>Días</th></tr></thead>
+        <tbody>${inv.map(c => {
+          const dias = Math.floor((Date.now() - new Date(c.fechaCompra||Date.now()))/(1000*60*60*24));
+          return `<tr onclick="openDetalle('${c.id}','dashboard')" style="cursor:pointer">
+            <td><strong>${c.marca} ${c.modelo}</strong></td>
+            <td class="amt">${c.anio}</td>
+            <td>${c.procedencia}</td>
+            <td class="amt">${fmt(getTotalInvertido(c))}</td>
+            <td class="amt">${dias}d</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  }
+
+  // Sold table
+  const last5 = [...sold].reverse().slice(0,5);
+  if (last5.length === 0) {
+    document.getElementById('dash-sold-table').innerHTML = '<div class="empty"><div class="empty-icon">💸</div><div class="empty-text">Sin ventas registradas</div></div>';
+  } else {
+    document.getElementById('dash-sold-table').innerHTML = `
+      <table>
+        <thead><tr><th>Vehículo</th><th>Invertido</th><th>Vendido</th><th>Ganancia</th><th>%</th></tr></thead>
+        <tbody>${last5.map(c => {
+          const inv = getTotalInvertido(c), gan = getGanancia(c);
+          const pct = inv > 0 ? ((gan/inv)*100).toFixed(1) : '0';
+          return `<tr onclick="openDetalle('${c.id}','vendidos')" style="cursor:pointer">
+            <td><strong>${c.marca} ${c.modelo}</strong> <span style="color:var(--muted);font-size:11px">${c.anio}</span></td>
+            <td class="amt">${fmt(inv)}</td>
+            <td class="amt">${fmt(c.venta.precio)}</td>
+            <td class="amt ${gan>=0?'pos':'neg'}">${fmt(gan)}</td>
+            <td class="amt ${gan>=0?'pos':'neg'}">${pct}%</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  }
+}
+
+// ===== INVENTARIO =====
+function renderInventario() {
+  const inv = db.cars.filter(c => !c.venta);
+  const el = document.getElementById('inv-list');
+  if (inv.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🚗</div><div class="empty-text">No tienes vehículos en inventario.<br>Toca + para agregar el primero.</div></div>';
+    return;
+  }
+  el.innerHTML = inv.map(c => carCard(c,'inventario')).join('');
+}
+
+function renderVendidos() {
+  const sold = db.cars.filter(c => c.venta).reverse();
+  const el = document.getElementById('sold-list');
+  if (sold.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">Aún no has registrado ventas.</div></div>';
+    return;
+  }
+  el.innerHTML = sold.map(c => carCard(c,'vendidos')).join('');
+}
+
+function carCard(c, origin) {
+  const total = getTotalInvertido(c);
+  const gan = getGanancia(c);
+  const isSold = !!c.venta;
+  return `<div class="car-item" onclick="openDetalle('${c.id}','${origin}')">
+    <div class="car-item-head">
+      <div>
+        <div class="car-name">${c.marca} ${c.modelo}</div>
+        <div class="car-meta">${c.anio} · ${c.procedencia} · Comprado: ${fdate(c.fechaCompra)}</div>
+      </div>
+      <span class="badge ${isSold?'sold':'inv'}">${isSold?'VENDIDO':'INVENTARIO'}</span>
+    </div>
+    <div class="car-financials">
+      <div class="fin-item"><div class="fin-label">Total Invertido</div><div class="fin-val" style="color:var(--accent)">${fmt(total)}</div></div>
+      ${isSold ? `<div class="fin-item"><div class="fin-label">Precio Venta</div><div class="fin-val" style="color:var(--blue)">${fmt(c.venta.precio)}</div></div>` : ''}
+      ${isSold ? `<div class="fin-item"><div class="fin-label">Ganancia Neta</div><div class="fin-val" style="color:${gan>=0?'var(--green)':'var(--red)'}">${fmt(gan)}</div></div>` : ''}
+      <div class="fin-item"><div class="fin-label">Gastos</div><div class="fin-val" style="color:var(--muted)">${(c.gastos||[]).length} movs.</div></div>
+    </div>
+  </div>`;
+}
+
+// ===== DETALLE =====
+function openDetalle(id, origin) {
+  currentCarId = id;
+  prevPage = origin;
+  const car = db.cars.find(c => c.id === id);
+  if (!car) return;
+  renderDetalle(car);
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-detalle').classList.add('active');
+  document.getElementById('fab-btn').style.display = 'none';
+}
+
+function backToList() {
+  currentCarId = null;
+  showPage(prevPage);
+}
+
+function renderDetalle(car) {
+  const total = getTotalInvertido(car);
+  const gan = getGanancia(car);
+  const isSold = !!car.venta;
+
+  let profitHtml = '';
+  if (isSold) {
+    const pct = total > 0 ? ((gan/total)*100).toFixed(1) : '0';
+    profitHtml = `
+      <div class="profit-box ${gan>=0?'pos':'neg'}">
+        <div class="profit-label">${gan>=0?'🟢 Ganancia Neta':'🔴 Pérdida Neta'}</div>
+        <div class="profit-val" style="color:${gan>=0?'var(--green)':'var(--red)'}">${fmt(Math.abs(gan))}</div>
+        <div class="profit-pct" style="color:${gan>=0?'var(--green)':'var(--red)'}">Rentabilidad: ${gan>=0?'+':''}${pct}%</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">Vendido a: ${car.venta.comprador||'—'} · ${fdate(car.venta.fecha)}</div>
+      </div>`;
+  }
+
+  const gastosHtml = (car.gastos||[]).length === 0
+    ? '<div class="empty" style="padding:24px"><div class="empty-icon">💸</div><div class="empty-text">Sin gastos registrados</div></div>'
+    : `<div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>Fecha</th>${!isSold?'<th></th>':''}</tr></thead>
+        <tbody>${(car.gastos||[]).map((g,i) => `
+          <tr>
+            <td class="amt" style="color:var(--muted)">${i+1}</td>
+            <td><span class="cat-tag ${catClass(g.categoria)}">${catLabel(g.categoria)}</span></td>
+            <td>${g.descripcion||'—'}</td>
+            <td class="amt">${fmt(g.monto)}</td>
+            <td class="amt" style="color:var(--muted)">${fdate(g.fecha)}</td>
+            ${!isSold?`<td><button class="btn btn-danger btn-sm" onclick="deleteGasto('${car.id}','${g.id}',event)">✕</button></td>`:''}
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr>
+          <td colspan="3" style="text-align:right;font-weight:700;color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;padding:12px">TOTAL INVERTIDO</td>
+          <td class="amt" style="font-size:16px;font-weight:700;color:var(--accent)">${fmt(total)}</td>
+          <td></td>${!isSold?'<td></td>':''}
+        </tr></tfoot>
+      </table></div>`;
+
+  document.getElementById('detalle-content').innerHTML = `
+    <div class="detail-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="detail-title">${car.marca} ${car.modelo}</div>
+          <div class="detail-meta">${car.anio} · ${car.procedencia} · Comprado: ${fdate(car.fechaCompra)}</div>
+          ${car.notas ? `<div style="font-size:13px;color:var(--muted);margin-top:8px">${car.notas}</div>` : ''}
+        </div>
+        <span class="badge ${isSold?'sold':'inv'}" style="font-size:12px">${isSold?'VENDIDO':'INVENTARIO'}</span>
+      </div>
+      <div class="detail-stats">
+        <div class="stat-box"><div class="stat-label">Total Invertido</div><div class="stat-val yellow" style="font-size:22px">${fmt(total)}</div></div>
+        ${isSold ? `<div class="stat-box"><div class="stat-label">Precio Venta</div><div class="stat-val blue" style="font-size:22px">${fmt(car.venta.precio)}</div></div>` : ''}
+        <div class="stat-box"><div class="stat-label">Movimientos</div><div class="stat-val" style="font-size:22px;color:var(--muted)">${(car.gastos||[]).length}</div></div>
+      </div>
+    </div>
+
+    ${profitHtml}
+
+    ${!isSold ? `
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="openGasto()">+ Agregar Gasto</button>
+      <button class="btn btn-green btn-sm" onclick="openVenta()">💰 Registrar Venta</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteCar('${car.id}')">🗑 Eliminar</button>
+    </div>` : `
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" onclick="deleteCar('${car.id}')">🗑 Eliminar Registro</button>
+    </div>`}
+
+    <div class="section-title" style="margin-top:8px">Historial de Gastos</div>
+    ${gastosHtml}
+  `;
+}
+
+// ===== REPORTES =====
+function renderReportes() {
+  const all = [...db.cars].reverse();
+  if (all.length === 0) {
+    document.getElementById('reporte-table').innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Sin datos aún</div></div>';
+    document.getElementById('reporte-summary').innerHTML = '';
+    return;
+  }
+  document.getElementById('reporte-table').innerHTML = `
+    <table>
+      <thead><tr><th>Vehículo</th><th>Año</th><th>Procedencia</th><th>Estado</th><th>Invertido</th><th>Venta</th><th>Ganancia</th><th>%</th></tr></thead>
+      <tbody>${all.map(c => {
+        const inv = getTotalInvertido(c), gan = getGanancia(c);
+        const pct = inv > 0 && gan !== null ? ((gan/inv)*100).toFixed(1) : '—';
+        const origin2 = c.venta ? 'vendidos' : 'inventario';
+        return `<tr onclick="openDetalle('${c.id}','${origin2}')" style="cursor:pointer">
+          <td><strong>${c.marca} ${c.modelo}</strong></td>
+          <td>${c.anio}</td>
+          <td>${c.procedencia}</td>
+          <td><span class="badge ${c.venta?'sold':'inv'}">${c.venta?'VENDIDO':'ACTIVO'}</span></td>
+          <td class="amt">${fmt(inv)}</td>
+          <td class="amt">${c.venta ? fmt(c.venta.precio) : '—'}</td>
+          <td class="amt ${gan===null?'':gan>=0?'pos':'neg'}">${gan !== null ? fmt(gan) : '—'}</td>
+          <td class="amt ${gan===null?'':gan>=0?'pos':'neg'}">${pct !== '—' ? pct+'%' : '—'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+
+  const sold = db.cars.filter(c => c.venta);
+  const inv = db.cars.filter(c => !c.venta);
+  const ganTotal = sold.reduce((s,c) => s+(getGanancia(c)||0), 0);
+  const capActivo = inv.reduce((s,c) => s+getTotalInvertido(c), 0);
+  const totalInv = db.cars.reduce((s,c) => s+getTotalInvertido(c), 0);
+
+  document.getElementById('reporte-summary').innerHTML = `
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Concepto</th><th>Valor</th></tr></thead>
+      <tbody>
+        <tr><td>Total vehículos registrados</td><td class="amt">${db.cars.length}</td></tr>
+        <tr><td>En inventario activo</td><td class="amt" style="color:var(--blue)">${inv.length}</td></tr>
+        <tr><td>Vehículos vendidos</td><td class="amt" style="color:var(--green)">${sold.length}</td></tr>
+        <tr><td>Capital en inventario activo</td><td class="amt" style="color:var(--accent)">${fmt(capActivo)}</td></tr>
+        <tr><td>Total invertido (histórico)</td><td class="amt" style="color:var(--accent)">${fmt(totalInv)}</td></tr>
+        <tr><td>Ganancias netas acumuladas</td><td class="amt ${ganTotal>=0?'pos':'neg'}" style="font-size:16px;font-weight:700">${fmt(ganTotal)}</td></tr>
+      </tbody>
+    </table></div>`;
+}
+
+// ===== MODALS =====
+function openAddCar() {
+  document.getElementById('f-marca').value='';
+  document.getElementById('f-modelo').value='';
+  document.getElementById('f-anio').value='';
+  document.getElementById('f-fecha').value=today();
+  document.getElementById('f-precio').value='';
+  document.getElementById('f-notas').value='';
+  openModal('modal-car');
+}
+
+function saveCar() {
+  const marca = document.getElementById('f-marca').value.trim();
+  const modelo = document.getElementById('f-modelo').value.trim();
+  const anio = document.getElementById('f-anio').value.trim();
+  const precio = parseFloat(document.getElementById('f-precio').value)||0;
+  if (!marca || !modelo || !anio) { showToast('Completa Marca, Modelo y Año'); return; }
+  const car = {
+    id: uid(), marca, modelo, anio,
+    procedencia: document.getElementById('f-procedencia').value,
+    fechaCompra: document.getElementById('f-fecha').value,
+    notas: document.getElementById('f-notas').value.trim(),
+    gastos: precio > 0 ? [{id:uid(), categoria:'compra', descripcion:'Precio de compra', monto:precio, fecha:document.getElementById('f-fecha').value}] : [],
+    venta: null
+  };
+  db.cars.push(car);
+  save();
+  closeModal('modal-car');
+  showToast('✅ Vehículo agregado');
+  renderInventario();
+}
+
+function openGasto() {
+  document.getElementById('g-monto').value='';
+  document.getElementById('g-desc').value='';
+  document.getElementById('g-fecha').value=today();
+  openModal('modal-gasto');
+}
+
+function saveGasto() {
+  const monto = parseFloat(document.getElementById('g-monto').value)||0;
+  if (!monto) { showToast('Ingresa el monto'); return; }
+  const car = db.cars.find(c => c.id === currentCarId);
+  if (!car) return;
+  car.gastos.push({
+    id: uid(),
+    categoria: document.getElementById('g-cat').value,
+    descripcion: document.getElementById('g-desc').value.trim(),
+    monto, fecha: document.getElementById('g-fecha').value
+  });
+  save();
+  closeModal('modal-gasto');
+  showToast('💸 Gasto agregado · Total: ' + fmt(getTotalInvertido(car)));
+  renderDetalle(car);
+}
+
+function deleteGasto(carId, gastoId, e) {
+  e.stopPropagation();
+  const car = db.cars.find(c => c.id === carId);
+  if (!car) return;
+  car.gastos = car.gastos.filter(g => g.id !== gastoId);
+  save();
+  renderDetalle(car);
+  showToast('Gasto eliminado');
+}
+
+function openVenta() {
+  document.getElementById('v-precio').value='';
+  document.getElementById('v-comprador').value='';
+  document.getElementById('v-fecha').value=today();
+  document.getElementById('venta-preview').innerHTML='';
+  document.getElementById('v-precio').addEventListener('input', previewVenta);
+  openModal('modal-venta');
+}
+
+function previewVenta() {
+  const precio = parseFloat(document.getElementById('v-precio').value)||0;
+  const car = db.cars.find(c => c.id === currentCarId);
+  if (!car || !precio) { document.getElementById('venta-preview').innerHTML=''; return; }
+  const total = getTotalInvertido(car);
+  const gan = precio - total;
+  const pct = total > 0 ? ((gan/total)*100).toFixed(1) : '0';
+  document.getElementById('venta-preview').innerHTML = `
+    <div class="profit-box ${gan>=0?'pos':'neg'}">
+      <div class="profit-label">Vista previa de resultado</div>
+      <div class="profit-val" style="color:${gan>=0?'var(--green)':'var(--red)'};font-size:32px">${fmt(Math.abs(gan))}</div>
+      <div class="profit-pct" style="color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'Ganancia':'Pérdida'} · ${pct}%</div>
+    </div>`;
+}
+
+function saveVenta() {
+  const precio = parseFloat(document.getElementById('v-precio').value)||0;
+  if (!precio) { showToast('Ingresa el precio de venta'); return; }
+  const car = db.cars.find(c => c.id === currentCarId);
+  if (!car) return;
+  car.venta = {
+    precio,
+    fecha: document.getElementById('v-fecha').value,
+    comprador: document.getElementById('v-comprador').value.trim()
+  };
+  save();
+  closeModal('modal-venta');
+  const gan = getGanancia(car);
+  showToast(gan>=0 ? `🎉 Vendido! Ganancia: ${fmt(gan)}` : `Vendido. Pérdida: ${fmt(Math.abs(gan))}`);
+  renderDetalle(car);
+}
+
+function deleteCar(id) {
+  if (!confirm('¿Eliminar este vehículo y todos sus datos?')) return;
+  db.cars = db.cars.filter(c => c.id !== id);
+  save();
+  backToList();
+  showToast('Vehículo eliminado');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.overlay').forEach(o => o.addEventListener('click', function(e) { if(e.target===this) this.classList.remove('open'); }));
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===== INIT =====
+updateTopbar();
+renderDashboard();
+document.getElementById('fab-btn').style.display='none';
+</script>
+</body>
+</html>
